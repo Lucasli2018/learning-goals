@@ -339,11 +339,14 @@ function migrate(){
 function seed(){
   if(state.meta.seeded)return;
   const t=todayStr();
-  const g1=uid(),g2=uid(),g3=uid();
+  const g1=uid(),g2=uid(),g3=uid(),g4=uid(),g5=uid(),g6=uid();
   state.goals=[
     {id:g1,name:'背英语单词',unit:'个',total:2000,deadline:addDays(t,60),color:'#7c5cff',obstacle:'容易忘记前面背过的词',countermeasure:'每天先复习前日单词10分钟再背新词',category:'study',seeded:true,createdAt:nowISO()},
     {id:g2,name:'读《人类简史》',unit:'页',total:440,deadline:addDays(t,30),color:'#2ecc71',obstacle:'下班后太累不想读',countermeasure:'通勤地铁上用手机读20分钟',category:'hobby',seeded:true,createdAt:nowISO()},
     {id:g3,name:'Python 入门课',unit:'节',total:100,deadline:addDays(t,45),color:'#3aa0ff',obstacle:'遇到报错就想放弃',countermeasure:'先截图搜报错，卡15分钟就问AI',category:'study',seeded:true,createdAt:nowISO()},
+    {id:g4,name:'每天运动',unit:'分钟',total:2400,deadline:addDays(t,90),color:'#2ecc71',obstacle:'加班后没力气动',countermeasure:'早起15分钟在家跟练，不求强度只求坚持',category:'health',seeded:true,createdAt:nowISO()},
+    {id:g5,name:'读完行业报告',unit:'篇',total:30,deadline:addDays(t,21),color:'#3aa0ff',obstacle:'报告太长容易半途而废',countermeasure:'每天拆1-2篇，地铁上读完并记一条要点',category:'work',seeded:true,createdAt:nowISO()},
+    {id:g6,name:'每月存下零钱',unit:'元',total:5000,deadline:addDays(t,180),color:'#ff8a3d',obstacle:'忍不住冲动消费',countermeasure:'发工资当天先转固定一笔到存钱罐',category:'life',seeded:true,createdAt:nowISO()},
   ];
   const recs=[];
   const add=(gid,off,amt,mins,back)=>recs.push({id:uid(),goalId:gid,date:addDays(t,off),amount:amt,minutes:mins||0,backfilled:!!back,createdAt:nowISO()});
@@ -356,6 +359,12 @@ function seed(){
   // 目标3：近6天全勤，正常无提醒
   add(g3,-6,2,30,false); add(g3,-5,2,25,false); add(g3,-4,3,30,false);
   add(g3,-3,2,20,false); add(g3,-2,2,25,false); add(g3,-1,3,30,false);
+  // 目标4：健康 - 近5天运动
+  add(g4,-5,30,30,false); add(g4,-4,40,40,false); add(g4,-3,20,20,false); add(g4,-2,35,35,false); add(g4,-1,30,30,false);
+  // 目标5：工作 - 近4天读报告
+  add(g5,-6,1,15,false); add(g5,-5,2,20,false); add(g5,-4,1,10,false); add(g5,-3,2,20,false);
+  // 目标6：生活 - 近6天存零钱
+  add(g6,-6,80,0,false); add(g6,-5,50,0,false); add(g6,-4,100,0,false); add(g6,-3,60,0,false); add(g6,-2,90,0,false); add(g6,-1,70,0,false);
   state.records=recs;
   state.meta={version:1,seeded:true};
   saveAll();
