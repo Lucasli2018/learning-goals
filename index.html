@@ -505,8 +505,8 @@ function renderToday(){
     html+=`<div class="calm">${IC.check}今天没有特别要处理的，保持节奏继续就好～</div>`;
   }
   const goals=state.goals.filter(goalVisible);
+  html+=renderCatFilter();
   if(goals.length){
-    html+=renderCatFilter();
     html+='<div class="goal-grid">';
     goals.forEach(g=>{
       const done=totalDone(g.id),rate=Math.min(100,Math.round(done/g.total*100));
@@ -588,7 +588,7 @@ function renderBoard(){
   const el=document.getElementById('tab-board');
   if(!state.goals.length){el.innerHTML='<div class="empty">还没有目标，去「今日」新建一个吧</div>';return;}
   const goals=state.goals.filter(goalVisible);
-  if(!goals.length){el.innerHTML='<div class="empty">该分类下还没有目标</div>';return;}
+  if(!goals.length){el.innerHTML=renderCatFilter()+'<div class="empty">该分类下还没有目标</div>';return;}
   let html=renderCatFilter()+`<div class="board-grid"><div class="chart-card card" style="grid-column:1/-1">${renderChart(goals)}</div>`;
   goals.forEach(g=>{
     const done=totalDone(g.id),rate=Math.min(100,Math.round(done/g.total*100));
