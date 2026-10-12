@@ -175,6 +175,17 @@
   .clear-input{width:100%; border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-size:15px; margin:8px 0; background:#fff;}
   .clear-input:focus{outline:none; border-color:var(--red);}
   .hidden-file{display:none;}
+  /* ---------- category ---------- */
+  .cat-filter{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;-webkit-overflow-scrolling:touch;}
+  .cat-filter::-webkit-scrollbar{display:none;}
+  .cat-chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;cursor:pointer;flex:none;display:inline-flex;align-items:center;gap:6px;}
+  .cat-chip.active{background:var(--purple-grad);color:#fff;border-color:transparent;}
+  .cat-chip .cdot{width:8px;height:8px;border-radius:50%;}
+  .cat-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;flex:none;}
+  .cats{display:flex;gap:8px;flex-wrap:wrap;}
+  .cats .cc{border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .cats .cc.sel{border-color:var(--purple);background:#f3f0ff;color:var(--purple);}
+  .cats .cc .cdot{width:8px;height:8px;border-radius:50%;}
   /* ---------- modal ---------- */
   #modal-root{position:fixed; inset:0; z-index:100; display:none; align-items:flex-end; justify-content:center;}
   #modal-root.show{display:flex;}
@@ -274,6 +285,11 @@ const IC = {
   refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>',
 };
 const COLORS = ['#7c5cff','#2ecc71','#3aa0ff','#ff8a3d','#ff5b5b','#e050b0','#19b3c4','#f5c518'];
+const CATS={study:{name:'学习',color:'#7c5cff'},health:{name:'健康',color:'#2ecc71'},work:{name:'工作',color:'#3aa0ff'},hobby:{name:'兴趣',color:'#e050b0'},life:{name:'生活',color:'#ff8a3d'},none:{name:'未分类',color:'#9aa0b5'}};
+const CAT_KEYS=['study','health','work','hobby','life','none'];
+function catName(k){return (CATS[k]||CATS.none).name;}
+function catColor(k){return (CATS[k]||CATS.none).color;}
+function tint(hex){const x=hex.replace('#','');const r=parseInt(x.slice(0,2),16),g=parseInt(x.slice(2,4),16),b=parseInt(x.slice(4,6),16);return 'rgba('+r+','+g+','+b+',.14)';}
 
 /* ============================ 日期工具 ============================ */
 function fmt(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),da=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${da}`;}
@@ -289,7 +305,7 @@ function escapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'
 
 /* ============================ 存储层 ============================ */
 const K={goals:'wb_learn_goals',records:'wb_learn_records',notes:'wb_learn_weeknotes',meta:'wb_learn_meta'};
-const state={goals:[],records:[],notes:{},meta:{},activeTab:'today',weekOffset:0,modalType:null,modalGoalId:null,pendingImport:null,selColor:'#7c5cff'};
+const state={goals:[],records:[],notes:{},meta:{},activeTab:'today',weekOffset:0,modalType:null,modalGoalId:null,pendingImport:null,selColor:'#7c5cff',catFilter:'all',selCat:'none'};
 
 function loadAll(){
   try{state.goals=JSON.parse(localStorage.getItem(K.goals)||'[]');}catch(e){state.goals=[];}
@@ -310,6 +326,7 @@ function migrate(){
     if(g.obstacle===undefined){g.obstacle='';changed=true;}
     if(g.countermeasure===undefined){g.countermeasure='';changed=true;}
     if(g.seeded===undefined){g.seeded=false;changed=true;}
+    if(g.category===undefined){g.category='none';changed=true;}
     if(g.createdAt===undefined){g.createdAt=nowISO();changed=true;}
   });
   state.records.forEach(r=>{
@@ -324,9 +341,9 @@ function seed(){
   const t=todayStr();
   const g1=uid(),g2=uid(),g3=uid();
   state.goals=[
-    {id:g1,name:'背英语单词',unit:'个',total:2000,deadline:addDays(t,60),color:'#7c5cff',obstacle:'容易忘记前面背过的词',countermeasure:'每天先复习前日单词10分钟再背新词',seeded:true,createdAt:nowISO()},
-    {id:g2,name:'读《人类简史》',unit:'页',total:440,deadline:addDays(t,30),color:'#2ecc71',obstacle:'下班后太累不想读',countermeasure:'通勤地铁上用手机读20分钟',seeded:true,createdAt:nowISO()},
-    {id:g3,name:'Python 入门课',unit:'节',total:100,deadline:addDays(t,45),color:'#3aa0ff',obstacle:'遇到报错就想放弃',countermeasure:'先截图搜报错，卡15分钟就问AI',seeded:true,createdAt:nowISO()},
+    {id:g1,name:'背英语单词',unit:'个',total:2000,deadline:addDays(t,60),color:'#7c5cff',obstacle:'容易忘记前面背过的词',countermeasure:'每天先复习前日单词10分钟再背新词',category:'study',seeded:true,createdAt:nowISO()},
+    {id:g2,name:'读《人类简史》',unit:'页',total:440,deadline:addDays(t,30),color:'#2ecc71',obstacle:'下班后太累不想读',countermeasure:'通勤地铁上用手机读20分钟',category:'hobby',seeded:true,createdAt:nowISO()},
+    {id:g3,name:'Python 入门课',unit:'节',total:100,deadline:addDays(t,45),color:'#3aa0ff',obstacle:'遇到报错就想放弃',countermeasure:'先截图搜报错，卡15分钟就问AI',category:'study',seeded:true,createdAt:nowISO()},
   ];
   const recs=[];
   const add=(gid,off,amt,mins,back)=>recs.push({id:uid(),goalId:gid,date:addDays(t,off),amount:amt,minutes:mins||0,backfilled:!!back,createdAt:nowISO()});
@@ -446,6 +463,14 @@ function attentionList(){
   list.sort((a,b)=>order[a.type]-order[b.type]);
   return list;
 }
+function goalVisible(g){return state.catFilter==='all'||(g.category||'none')===state.catFilter;}
+function catCounts(){const m={};CAT_KEYS.forEach(k=>m[k]=0);state.goals.forEach(g=>{const k=CATS[g.category]?g.category:'none';m[k]++;});return m;}
+function renderCatFilter(){
+  const counts=catCounts();
+  const chips=['<div class="cat-chip '+(state.catFilter==='all'?'active':'')+'" data-action="cat-filter" data-cat="all">全部 '+state.goals.length+'</div>']
+    .concat(CAT_KEYS.map(k=>'<div class="cat-chip '+(state.catFilter===k?'active':'')+'" data-action="cat-filter" data-cat="'+k+'"><span class="cdot" style="background:'+CATS[k].color+'"></span>'+CATS[k].name+' '+counts[k]+'</div>'));
+  return '<div class="cat-filter">'+chips.join('')+'</div>';
+}
 function renderToday(){
   const el=document.getElementById('tab-today');
   const att=attentionList();
@@ -479,8 +504,9 @@ function renderToday(){
   }else{
     html+=`<div class="calm">${IC.check}今天没有特别要处理的，保持节奏继续就好～</div>`;
   }
-  const goals=state.goals;
+  const goals=state.goals.filter(goalVisible);
   if(goals.length){
+    html+=renderCatFilter();
     html+='<div class="goal-grid">';
     goals.forEach(g=>{
       const done=totalDone(g.id),rate=Math.min(100,Math.round(done/g.total*100));
@@ -490,7 +516,7 @@ function renderToday(){
         <div class="goal-top">
           <div class="goal-color" style="background:${g.color}"></div>
           <div class="goal-main">
-            <div class="goal-name">${escapeHtml(g.name)} ${isCompleted(g)?'<span class="done-badge">已达成</span>':''}</div>
+            <div class="goal-name">${escapeHtml(g.name)} <span class="cat-badge" style="background:${tint(catColor(g.category))};color:${catColor(g.category)}">${catName(g.category)}</span> ${isCompleted(g)?'<span class="done-badge">已达成</span>':''}</div>
             <div class="progbar"><i style="width:${rate}%;background:${g.color}"></i></div>
             <div class="goal-meta">
               <span>已完成 <b>${done}/${g.total}</b> ${escapeHtml(g.unit)}</span>
@@ -513,6 +539,8 @@ function renderToday(){
       </div>`;
     });
     html+='</div>';
+  }else{
+    html+='<div class="empty">该分类下暂无目标</div>';
   }
   html+=`<div class="pill-new" data-action="new-goal" style="margin-top:16px;background:#fff;color:var(--purple);border:2px dashed var(--purple2);box-shadow:none">${IC.plus}再新建一个目标</div>`;
   el.innerHTML=html;
@@ -526,10 +554,10 @@ function ring(rate,color){
     <text x="36" y="41" text-anchor="middle" font-size="15" font-weight="800" fill="#2b2d42">${rate}%</text>
   </svg>`;
 }
-function renderChart(){
+function renderChart(goalsParam){
   const t=todayStr();
   const days=[];for(let i=13;i>=0;i--)days.push(addDays(t,-i));
-  const goals=state.goals;
+  const goals=goalsParam||state.goals;
   const data=days.map(d=>{
     const segs=[];let tot=0;
     goals.forEach(g=>{
@@ -559,8 +587,10 @@ function renderChart(){
 function renderBoard(){
   const el=document.getElementById('tab-board');
   if(!state.goals.length){el.innerHTML='<div class="empty">还没有目标，去「今日」新建一个吧</div>';return;}
-  let html=`<div class="board-grid"><div class="chart-card card" style="grid-column:1/-1">${renderChart()}</div>`;
-  state.goals.forEach(g=>{
+  const goals=state.goals.filter(goalVisible);
+  if(!goals.length){el.innerHTML='<div class="empty">该分类下还没有目标</div>';return;}
+  let html=renderCatFilter()+`<div class="board-grid"><div class="chart-card card" style="grid-column:1/-1">${renderChart(goals)}</div>`;
+  goals.forEach(g=>{
     const done=totalDone(g.id),rate=Math.min(100,Math.round(done/g.total*100));
     const streak=computeStreak(g.id),est=computeEstimate(g);
     const recs=getRecords(g.id).slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
@@ -577,7 +607,7 @@ function renderBoard(){
     html+=`<div class="bcard">
       <div class="bcard-top">${ring(rate,g.color)}
         <div class="bcard-info">
-          <div class="bcard-name">${escapeHtml(g.name)} ${isCompleted(g)?'<span class="done-badge">已达成</span>':''}</div>
+          <div class="bcard-name">${escapeHtml(g.name)} <span class="cat-badge" style="background:${tint(catColor(g.category))};color:${catColor(g.category)}">${catName(g.category)}</span> ${isCompleted(g)?'<span class="done-badge">已达成</span>':''}</div>
           <div class="nums">
             <div class="num"><b>${rate}%</b><span>完成率</span></div>
             <div class="num"><b>${streak}</b><span>连续天数</span></div>
@@ -727,8 +757,8 @@ function openCheckinModal(gid){
 function openGoalModal(gid){
   const g=gid?state.goals.find(x=>x.id===gid):null;
   const name=g?g.name:'',unit=g?g.unit:'个',total=g?g.total:'',deadline=g?g.deadline:addDays(todayStr(),30),
-        color=g?g.color:'#7c5cff',obstacle=g?g.obstacle:'',counter=g?g.countermeasure:'';
-  state.selColor=color;
+        color=g?g.color:'#7c5cff',obstacle=g?g.obstacle:'',counter=g?g.countermeasure:'',cat=g?g.category:'none';
+  state.selColor=color;state.selCat=cat;
   const swatches=COLORS.map(c=>`<div class="cw ${c===color?'sel':''}" data-color="${c}" style="background:${c}"></div>`).join('');
   openModal(`<h3>${gid?IC.edit+' 编辑目标':IC.plus+' 新建目标'}</h3>
     <div class="field"><label>名称</label><input id="g-name" value="${escapeHtml(name)}" placeholder="如：背完 2000 个单词" maxlength="30"></div>
@@ -736,6 +766,7 @@ function openGoalModal(gid){
     <div class="field"><label>总量（有终点的目标）</label><input id="g-total" type="number" min="1" step="any" value="${total}"></div>
     <div class="field"><label>截止日</label><input id="g-deadline" type="date" value="${deadline}"></div>
     <div class="field"><label>配色</label><div class="colors">${swatches}<input type="color" class="color-custom" id="g-color-custom" value="${color}"></div></div>
+    <div class="field"><label>分类</label><div class="cats">${CAT_KEYS.map(k=>`<div class="cc ${k===cat?'sel':''}" data-cat="${k}"><span class="cdot" style="background:${CATS[k].color}"></span>${CATS[k].name}</div>`).join('')}</div></div>
     <div class="field"><label>最容易拦住我的障碍（选填）</label><input id="g-obstacle" value="${escapeHtml(obstacle)}" placeholder="如：容易半途而废" maxlength="60"></div>
     <div class="field"><label>如果它出现，我就……（选填）</label><textarea id="g-counter" placeholder="如：先完成最小一步再奖励自己">${escapeHtml(counter)}</textarea></div>
     <div class="modal-actions"><button class="btn btn-ghost" data-action="modal-close">取消</button><button class="btn btn-primary" data-action="modal-confirm">${gid?'保存修改':'创建目标'}</button></div>`);
@@ -748,6 +779,10 @@ function openGoalModal(gid){
   document.getElementById('g-color-custom').addEventListener('input',e=>{
     state.selColor=e.target.value;document.querySelectorAll('.cw').forEach(x=>x.classList.remove('sel'));
   });
+  document.querySelectorAll('.cc').forEach(w=>w.addEventListener('click',()=>{
+    state.selCat=w.dataset.cat;
+    document.querySelectorAll('.cc').forEach(x=>x.classList.remove('sel'));w.classList.add('sel');
+  }));
 }
 function openDeleteModal(gid){
   const g=state.goals.find(x=>x.id===gid);if(!g)return;
@@ -857,9 +892,9 @@ function confirmModal(){
     if(!deadline){alert('请选择截止日');return;}
     if(state.modalGoalId){
       const g=state.goals.find(x=>x.id===state.modalGoalId);
-      Object.assign(g,{name,unit,total,deadline,color:state.selColor,obstacle,countermeasure:counter});
+      Object.assign(g,{name,unit,total,deadline,color:state.selColor,category:state.selCat,obstacle,countermeasure:counter});
     }else{
-      state.goals.push({id:uid(),name,unit,total,deadline,color:state.selColor,obstacle,countermeasure:counter,seeded:false,createdAt:nowISO()});
+      state.goals.push({id:uid(),name,unit,total,deadline,color:state.selColor,category:state.selCat,obstacle,countermeasure:counter,seeded:false,createdAt:nowISO()});
     }
     saveAll();closeModal();updateAll();
   }else if(state.modalType==='confirm-delete'){
@@ -885,6 +920,7 @@ function confetti(){
 function handleAction(a,id,el){
   switch(a){
     case 'tab': state.activeTab=el.dataset.tab; state.weekOffset=0; updateAll(); break;
+    case 'cat-filter': state.catFilter=el.dataset.cat; renderActiveTab(); break;
     case 'new-goal': openGoalModal(null); break;
     case 'checkin': openCheckinModal(id); break;
     case 'edit-goal': openGoalModal(id); break;
